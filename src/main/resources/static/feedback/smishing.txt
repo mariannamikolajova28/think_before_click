@@ -1,0 +1,4 @@
+Ide o podvodnú SMS správu.
+Obsahuje odkaz na falošnú stránku,
+ktorá môže získať tvoje údaje.
+Nikdy neklikaj na podozrivé SMS odkazy.

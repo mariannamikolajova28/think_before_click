@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Hlavné menu – Think Before Click</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <!-- Roboto Condensed -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+
+<div class="game-wrapper">
+
+
+    <div class="game-layout">
+
+        <!-- LEFT SIDE -->
+        <aside class="sidebar-left">
+            <div class="sidebar-left-text">
+                Myslíš si, že rozoznáš podvodný e-mail alebo falošnú správu?
+
+                <p class="sidebar-subtext">
+
+                    Otestuj svoje reflexy
+                    a nauč sa, ako sa nenechať nachytať.
+                </p>
+            </div>
+
+            <div class="sidebar-logo">
+                <img src="img/logos/logo_blue.png" alt="Logo" class="sidebar-logo-img">
+                <div>
+                    trénuj svoju pozornosť<br>
+                    ochráň svoje údaje
+                </div>
+            </div>
+        </aside>
+
+        <!-- MIDDLE -->
+        <main class="game-main">
+            <div class="game-main-title">VITAJ V HRE!</div>
+
+            <button class="start-circle" type="button"
+                    onclick="window.location.href='game.html'">
+                HRAŤ
+            </button>
+
+            <p class="game-disclaimer">
+                Upozornenie: Táto aplikácia je súčasťou výskumnej časti bakalárskej práce.
+                Vaše interakcie môžu byť anonymne vyhodnotené a uvedené v záverečnej práci.
+            </p>
+        </main>
+
+        <!-- RIGHT SIDE -->
+        <aside class="sidebar-right">
+            <button class="menu-button" type="button"
+                    onclick="window.location.href='profile.html'">
+                Môj profil
+            </button>
+
+            <button class="menu-button" type="button"
+                    onclick="window.location.href='leaderboard.html'">
+                Rebríček najlepších
+            </button>
+
+            <button class="menu-button" type="button"
+                    onclick="window.location.href='feedback.html'">
+                Moje pokusy
+            </button>
+
+            <button class="menu-button logout" type="button"
+                    onclick="window.location.href='login.html'">
+                Odhlásiť sa
+            </button>
+        </aside>
+
+
+    </div>
+</div>
+
+</body>
+</html>

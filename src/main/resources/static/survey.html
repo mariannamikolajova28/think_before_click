@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dotazník</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="game-wrapper">
+
+
+
+
+    <main class="survey-main">
+
+        <button class="back-button" type="button" onclick="window.location.href='login.html'">
+            <img src="img/logos/back.png" alt="Späť">
+        </button>
+
+        <h1 class="survey-title">Krátky dotazník používateľa</h1>
+        <p class="survey-subtitle">
+            Predtým, než začneš so simuláciou, odpovedz prosím na niekoľko anonymných otázok.
+            Tvoje odpovede nám pomôžu lepšie porozumieť, ako rôzni používatelia reagujú na hrozby
+            sociálneho inžinierstva.
+        </p>
+
+        <div class="survey-content">
+
+            <img src="img/logos/logo_pink.png" alt="Logo" class="survey-logo-left">
+
+            <!-- SURVEY -->
+            <form class="survey-form" id="surveyForm" onsubmit="return false;">
+
+                <label>Vek
+                    <select name="vek">
+                        <option value="" selected>Vyber</option>
+                        <option value="12-20">12-20</option>
+                        <option value="21-35">21-35</option>
+                        <option value="36-50">36-50</option>
+                        <option value="50+">50+</option>
+                    </select>
+                </label>
+
+                <label>Pohlavie
+                    <select name="pohlavie">
+                        <option value="" selected>Vyber</option>
+                        <option value="muz">Muž</option>
+                        <option value="zena">Žena</option>
+                        <option value="ine">Iné</option>
+                        <option value="nechcem-uviesť">Nechcem uviesť</option>
+                    </select>
+                </label>
+
+                <label>Najvyššie dosiahnuté vzdelanie
+                    <select name="vzdelanie">
+                        <option value="" selected>Vyber</option>
+                        <option value="zs">Základné</option>
+                        <option value="ss">Stredoškolské</option>
+                        <option value="vs">Vysokoškolské</option>
+                    </select>
+                </label>
+
+                <label>Odbor vysokej školy
+                    <input type="text" name="odbor" placeholder="Vyplň ak je relevantné">
+                </label>
+
+                <label>Koľko hodín za deň tráviš na sociálnych sieťach?
+                    <select name="socialne-siete">
+                        <option value="" selected>Vyber</option>
+                        <option value="0-2">0-2 hodiny</option>
+                        <option value="2-4">2-4 hodiny</option>
+                        <option value="4-6">4-6 hodiny</option>
+                        <option value="6+">6+ hodín</option>
+                    </select>
+                </label>
+
+                <label>Absolvoval(a) si niekedy školenie o sociálnom inžinierstve?
+                    <select name="skolenie">
+                        <option value="" selected>Vyber</option>
+                        <option value="ano">Áno</option>
+                        <option value="nie">Nie</option>
+                    </select>
+                </label>
+
+                <label>Aký je tvoj odhad o vlastných znalostiach v oblasti online bezpečnosti?
+                    <select name="bezpecnost">
+                        <option value="" selected>Vyber</option>
+                        <option value="nizke">Nízke</option>
+                        <option value="priemerne">Priemerné</option>
+                        <option value="vysoke">Vysoké</option>
+                    </select>
+                </label>
+
+                <label>Myslíš si, že dokážeš rozpoznať phishingový e-mail?
+                    <select name="phishing">
+                        <option value="" selected>Vyber</option>
+                        <option value="ano">Áno</option>
+                        <option value="nie">Nie</option>
+                        <option value="niekedy">Iba niekedy</option>
+                    </select>
+                </label>
+
+                <!-- BUTTONS -->
+                <div class="survey-buttons">
+                    <button type="reset" class="btn-pink-small">Vymazať</button>
+                    <button type="button" class="btn-dark-small" id="openConfirm">Odoslať</button>
+                </div>
+
+            </form>
+
+            <img src="img/logos/logo_pink.png" alt="Logo" class="survey-logo-right">
+
+        </div>
+
+    </main>
+
+</div>
+
+<!-- MODAL – CONFIRMATION -->
+<div class="modal-overlay" id="confirmModal" aria-hidden="true" style="display:none;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <h2 class="modal-title" id="modalTitle">Potvrdiť odoslanie dotazníka</h2>
+
+        <div class="modal-actions">
+            <button type="button" class="auth-btn auth-btn-light modal-btn" id="closeConfirm">
+                Zavrieť
+            </button>
+
+            <button type="button" class="auth-btn auth-btn-dark modal-btn" id="sendConfirm">
+                Odoslať
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    function getMode() {
+        const url = new URL(window.location.href);
+        return (url.searchParams.get("mode") || "").toLowerCase(); // "edit" alebo ""
+    }
+
+    function getSurveyUsername() {
+        const mode = getMode();
+        if (mode === "edit") {
+            return (localStorage.getItem("playerName") || "").trim();   // ✅ profil
+        }
+        return (localStorage.getItem("pendingUsername") || "").trim(); // ✅ registrácia
+    }
+
+    const username = getSurveyUsername();
+    const mode = getMode();
+
+    if (!username) {
+        if (mode === "edit") {
+            alert("Nie si prihlásená. Najprv sa prihlás.");
+            window.location.href = "login.html";
+        } else {
+            alert("Najprv zadaj meno na prihlásení a klikni na Registrovať sa.");
+            window.location.href = "login.html";
+        }
+    }
+    const modal = document.getElementById('confirmModal');
+    const openBtn = document.getElementById('openConfirm');
+    const closeBtn = document.getElementById('closeConfirm');
+    const sendBtn = document.getElementById('sendConfirm');
+
+    function openModal() {
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+    }
+    function closeModal() {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
+
+    function getMode() {
+        const url = new URL(window.location.href);
+        return (url.searchParams.get("mode") || "").toLowerCase(); // "edit" alebo ""
+    }
+
+    function usernameForThisSurvey() {
+        const mode = getMode();
+        if (mode === "edit") return (localStorage.getItem("playerName") || "").trim();
+        return getSurveyUsername();
+    }
+
+    function collectFormPayload(username) {
+        const form = document.getElementById("surveyForm");
+        const data = new FormData(form);
+
+        return {
+            username: username,
+            vek: data.get("vek") || "",
+            pohlavie: data.get("pohlavie") || "",
+            vzdelanie: data.get("vzdelanie") || "",
+            odbor: data.get("odbor") || "",
+            socialneSiete: data.get("socialne-siete") || "",
+            skolenie: data.get("skolenie") || "",
+            bezpecnost: data.get("bezpecnost") || "",
+            phishing: data.get("phishing") || ""
+        };
+    }
+
+    function validate(payload) {
+        // povinné dropdowny
+        return payload.vek && payload.pohlavie && payload.vzdelanie && payload.socialneSiete
+            && payload.skolenie && payload.bezpecnost && payload.phishing;
+    }
+
+    function setFormValues(answer) {
+        // answer = JSON z backendu
+        const form = document.getElementById("surveyForm");
+        form.querySelector('[name="vek"]').value = answer.vek || "";
+        form.querySelector('[name="pohlavie"]').value = answer.pohlavie || "";
+        form.querySelector('[name="vzdelanie"]').value = answer.vzdelanie || "";
+        form.querySelector('[name="odbor"]').value = answer.odbor || "";
+        form.querySelector('[name="socialne-siete"]').value = answer.socialneSiete || "";
+        form.querySelector('[name="skolenie"]').value = answer.skolenie || "";
+        form.querySelector('[name="bezpecnost"]').value = answer.bezpecnost || "";
+        form.querySelector('[name="phishing"]').value = answer.phishing || "";
+    }
+
+    async function loadExistingIfEdit() {
+        if (getMode() !== "edit") return;
+
+        const username = usernameForThisSurvey();
+        if (!username) {
+            alert("Nie si prihlásená. Vráť sa na prihlásenie.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        const res = await fetch(`/api/survey/${encodeURIComponent(username)}`);
+        if (!res.ok) {
+            // ak nemá dotazník, necháme prázdny (môže vyplniť)
+            return;
+        }
+        const data = await res.json();
+        setFormValues(data);
+    }
+
+    // hneď po načítaní stránky
+    loadExistingIfEdit();
+
+    sendBtn.addEventListener('click', async () => {
+        const username = usernameForThisSurvey();
+        const mode = getMode();
+
+        if (!username) {
+            alert("Chýba meno používateľa. Vráť sa na prihlásenie/registráciu.");
+            closeModal();
+            window.location.href = "login.html";
+            return;
+        }
+
+        const payload = collectFormPayload(username);
+
+        if (!validate(payload)) {
+            alert("Prosím vyplň všetky výberové otázky (tie s 'Vyber').");
+            return;
+        }
+
+        let res;
+
+        if (mode === "edit") {
+            // update existujúceho dotazníka
+            res = await fetch(`/api/survey/${encodeURIComponent(username)}`, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeModal();
+                alert("Dotazník bol uložený.");
+                window.location.href = "profile.html";
+                return;
+            }
+
+            alert("Uloženie dotazníka zlyhalo (chyba " + res.status + ").");
+            return;
+        }
+
+        // registrácia
+        res = await fetch("/api/register", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            localStorage.setItem("playerName", username);
+            localStorage.removeItem("pendingUsername");
+            closeModal();
+            window.location.href = "index.html";
+            return;
+        }
+
+        if (res.status === 409) {
+            alert("Používateľ už existuje. Skús sa prihlásiť.");
+            closeModal();
+            window.location.href = "login.html";
+            return;
+        }
+
+        alert("Registrácia zlyhala (chyba " + res.status + ").");
+    });
+</script>
+
+</body>
+</html>

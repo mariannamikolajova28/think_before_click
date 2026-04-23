@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rebríček najlepších</title>
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div class="game-wrapper">
+
+    <div class="game-layout">
+
+        <!-- LEFT -->
+        <aside class="sidebar-left screen-left">
+            <button class="back-button screen-back" type="button"
+                    onclick="window.location.href='index.html'">
+                <img src="img/logos/back.png" alt="Späť">
+            </button>
+
+            <div class="sidebar-logo screen-mini-logo">
+                <img src="img/logos/logo_blue.png" alt="Logo" class="sidebar-logo-img">
+                <p class="sidebar-logo-text">
+                    trénuj svoju pozornosť<br>
+                    ochráň svoje údaje
+                </p>
+            </div>
+        </aside>
+
+        <!-- MIDDLE -->
+        <main class="screen-main">
+            <h1 class="screen-title">Rebríček najlepších</h1>
+
+            <div class="table-wrap">
+                <div class="table-head grid-4">
+                    <div>Poradie</div>
+                    <div>Hráč</div>
+                    <div class="center">Úspešnosť v %</div>
+                    <div class="center">Pokusy</div>
+                </div>
+
+                <!-- Sem sa vložia riadky -->
+                <div id="scoresBody"></div>
+
+                <!-- (voliteľné) ak chceš nechať prázdne karty kvôli layoutu, nechaj ich.
+                     Inak ich kľudne vymaž. -->
+                <div class="table-empty"></div>
+                <div class="table-empty"></div>
+                <div class="table-empty"></div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDE -->
+        <aside class="sidebar-right-login">
+            <div class="info-heading">Chceš sa dozvedieť viac?</div>
+
+            <article class="info-card">
+                <div class="info-card-logo">NBU2024Report</div>
+                <div class="info-card-title">Národný bezpečnostný úrad</div>
+                <div>Správa o kybernetickej bezpečnosti v Slovenskej republike v roku 2024</div>
+                <a class="info-card-link"
+                   href="https://www.nbu.gov.sk/data/att/3305.pdf"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">TatraBanka</div>
+                <div class="info-card-title">Digitálna Bezpečnosť</div>
+                <div>#predigitalnubezpecnost – edukatívna stránka o digitálnej bezpečnosti a ochrane pred online podvodmi</div>
+                <a class="info-card-link"
+                   href="https://www.tatrabanka.sk/predigitalnubezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">ESET</div>
+                <div class="info-card-title">Progress. Protected.</div>
+                <div>Sociálne inžinierstvo a kybernetická bezpečnosť – vysvetlenie manipulácie používateľov a najčastejších online podvodov</div>
+                <a class="info-card-link"
+                   href="https://www.eset.com/sk/socialne-inzinierstvo-a-kyberneticka-bezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+        </aside>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadLeaderboard();
+    });
+
+    async function loadLeaderboard() {
+        const bodyEl = document.getElementById("scoresBody");
+
+        try {
+            const res = await fetch("/api/leaderboard", { cache: "no-store" });
+            if (!res.ok) throw new Error("Server vrátil chybu: " + res.status);
+
+            const rows = await res.json();
+
+            if (!Array.isArray(rows) || rows.length === 0) {
+                bodyEl.innerHTML = `
+          <div class="table-row grid-4">
+            <div>-</div>
+            <div>Žiadne výsledky</div>
+            <div class="center">-</div>
+            <div class="center">-</div>
+          </div>
+        `;
+                return;
+            }
+
+            bodyEl.innerHTML = rows.map((r, i) => `
+        <div class="table-row grid-4">
+          <div>${i + 1}.</div>
+          <div>${escapeHtml(r.name ?? r.username ?? "Neznámy")}</div>
+          <div class="center">${Number(r.successPercent ?? 0)}</div>
+          <div class="center">${Number(r.attempts ?? 0)}</div>
+        </div>
+      `).join("");
+
+        } catch (e) {
+            console.error(e);
+            bodyEl.innerHTML = `
+        <div class="table-row grid-4">
+          <div>!</div>
+          <div>Nepodarilo sa načítať výsledky</div>
+          <div class="center">-</div>
+          <div class="center">-</div>
+        </div>
+      `;
+        }
+    }
+
+    function escapeHtml(text) {
+        return String(text)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+</script>
+
+</body>
+</html>

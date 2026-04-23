@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spätná väzba</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="game-wrapper">
+
+
+    <div class="game-layout">
+
+        <!-- LEFT -->
+        <aside class="sidebar-left feedback-left">
+            <button class="back-button feedback-back" type="button" onclick="window.location.href='index.html'">
+                <img src="img/logos/back.png" alt="Späť">
+            </button>
+
+            <div class="sidebar-logo feedback-mini-logo">
+                <img src="img/logos/logo_blue.png" alt="Logo" class="sidebar-logo-img">
+                <p class="sidebar-logo-text">
+                    trénuj svoju pozornosť<br>
+                    ochráň svoje údaje
+                </p>
+            </div>
+        </aside>
+
+        <!-- MIDDLE -->
+        <main class="feedback-main">
+            <h1 class="feedback-title">Moje pokusy</h1>
+
+            <div class="feedback-table">
+                <div class="feedback-head">
+                    <div class="feedback-col-left">Pokus</div>
+                    <div class="feedback-col-right">Úspešnosť</div>
+                    <div class="feedback-col-action"></div>
+                </div>
+
+                <div id="attemptsBody"></div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDE -->
+        <aside class="sidebar-right-login">
+            <div class="info-heading">Chceš sa dozvedieť viac?</div>
+
+            <article class="info-card">
+                <div class="info-card-logo">NBU2024Report</div>
+                <div class="info-card-title">Národný bezpečnostný úrad</div>
+                <div>Správa o kybernetickej bezpečnosti v Slovenskej republike v roku 2024</div>
+                <a class="info-card-link"
+                   href="https://www.nbu.gov.sk/data/att/3305.pdf"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">TatraBanka</div>
+                <div class="info-card-title">Digitálna Bezpečnosť</div>
+                <div>#predigitalnubezpecnost – edukatívna stránka o digitálnej bezpečnosti a ochrane pred online podvodmi</div>
+                <a class="info-card-link"
+                   href="https://www.tatrabanka.sk/predigitalnubezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">ESET</div>
+                <div class="info-card-title">Progress. Protected.</div>
+                <div>Sociálne inžinierstvo a kybernetická bezpečnosť – vysvetlenie manipulácie používateľov a najčastejších online podvodov</div>
+                <a class="info-card-link"
+                   href="https://www.eset.com/sk/socialne-inzinierstvo-a-kyberneticka-bezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+        </aside>
+
+    </div>
+</div>
+
+<script>
+    function getLoggedUser() {
+        return (localStorage.getItem("playerName") || "").trim();
+    }
+    function requireLogin() {
+        const u = getLoggedUser();
+        if (!u) {
+            window.location.href = "login.html";
+            return null;
+        }
+        return u;
+    }
+
+    function escapeHtml(text) {
+        return String(text)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function formatDate(iso) {
+        if (!iso) return "-";
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return "-";
+        return d.toLocaleString("sk-SK");
+    }
+
+    async function loadAttempts() {
+        const username = requireLogin();
+        if (!username) return;
+
+        const body = document.getElementById("attemptsBody");
+        body.innerHTML = "";
+
+        const res = await fetch(`/api/attempt-sessions/${encodeURIComponent(username)}`, { cache: "no-store" });
+        if (!res.ok) {
+            body.innerHTML = `<div class="feedback-row"><div class="feedback-cell">-</div><div class="feedback-cell feedback-center">Chyba ${res.status}</div><div></div></div>`;
+            return;
+        }
+
+        const sessions = await res.json();
+        if (!Array.isArray(sessions) || sessions.length === 0) {
+            body.innerHTML = `<div class="feedback-row"><div class="feedback-cell">-</div><div class="feedback-cell feedback-center">Žiadne pokusy</div><div></div></div>`;
+            return;
+        }
+
+        // render max 10, ale môžeš dať aj viac
+        const top = sessions.slice(0, 10);
+
+        body.innerHTML = top.map((s, idx) => {
+            const percent = Number(s.successPercent ?? 0);
+            const startedAt = formatDate(s.startedAt);
+            const total = Number(s.total ?? 0);
+            const correct = Number(s.correct ?? 0);
+
+            return `
+        <div class="feedback-row">
+          <div class="feedback-cell">
+            ${idx + 1}. <span style="opacity:.75; font-weight:700;">(${escapeHtml(startedAt)})</span><br>
+            <span style="opacity:.75;">Správne: ${correct}/${total}</span>
+          </div>
+          <div class="feedback-cell feedback-center">${percent}%</div>
+          <button class="feedback-plus" type="button" aria-label="Zobraziť detail"
+            onclick="openDetail('${escapeHtml(s.sessionId)}')">+</button>
+        </div>
+      `;
+        }).join("");
+
+        // doplň prázdne sloty na “vizuál”
+        const missing = Math.max(0, 10 - top.length);
+        for (let i = 0; i < missing; i++) {
+            const div = document.createElement("div");
+            div.className = "feedback-empty";
+            body.appendChild(div);
+        }
+    }
+
+    function openDetail(sessionId) {
+        window.location.href = `attempts.html?session=${encodeURIComponent(sessionId)}`;
+    }
+
+    document.addEventListener("DOMContentLoaded", loadAttempts);
+</script>
+
+</body>
+</html>

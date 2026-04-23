@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Koniec hry</title>
+
+    <link rel="stylesheet" href="css/styles.css"/>
+
+</head>
+
+<body>
+<div class="game-wrapper">
+
+
+
+    <div class="game-layout">
+
+        <!-- LEFT SIDE -->
+        <aside class="sidebar-left">
+            <div class="sidebar-left-text">
+                Myslíš si, že rozoznáš podvodný e-mail alebo falošnú správu?
+
+                <p class="sidebar-subtext">
+
+                    Otestuj svoje reflexy
+                    a nauč sa, ako sa nenechať nachytať.
+                </p>
+            </div>
+
+            <div class="sidebar-logo">
+                <img src="img/logos/logo_blue.png" class="sidebar-logo-img" alt="Logo">
+                <div class="sidebar-logo-text">trénuj svoju pozornosť<br/>ochráň svoje údaje</div>
+            </div>
+        </aside>
+
+        <!-- MIDDLE -->
+        <main class="game-main">
+
+            <h1 class="end-title">Koniec hry</h1>
+
+            <div class="end-circle" id="resultCircle">
+                <span id="resultValue">0%</span>
+            </div>
+
+            <button class="btn-dark-small end-exit"
+                    onclick="window.location.href='index.html'">
+                Ukončiť hru
+            </button>
+
+        </main>
+
+        <!-- RIGHT SIDE -->
+        <aside class="sidebar-right-login">
+            <div class="info-heading">Chceš sa dozvedieť viac?</div>
+
+            <article class="info-card">
+                <div class="info-card-logo">NBU2024Report</div>
+                <div class="info-card-title">Národný bezpečnostný úrad</div>
+                <div>Správa o kybernetickej bezpečnosti v Slovenskej republike v roku 2024</div>
+                <a class="info-card-link"
+                   href="https://www.nbu.gov.sk/data/att/3305.pdf"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">TatraBanka</div>
+                <div class="info-card-title">Digitálna Bezpečnosť</div>
+                <div>#predigitalnubezpecnost – edukatívna stránka o digitálnej bezpečnosti a ochrane pred online podvodmi</div>
+                <a class="info-card-link"
+                   href="https://www.tatrabanka.sk/predigitalnubezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">ESET</div>
+                <div class="info-card-title">Progress. Protected.</div>
+                <div>Sociálne inžinierstvo a kybernetická bezpečnosť – vysvetlenie manipulácie používateľov a najčastejších online podvodov</div>
+                <a class="info-card-link"
+                   href="https://www.eset.com/sk/socialne-inzinierstvo-a-kyberneticka-bezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+        </aside>
+
+
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+
+    // 1) Preferuj score (0-100), ak je poslané
+    const scoreParam = params.get('score');
+
+    // 2) Alternatíva: vypočítaj z correct/rounds
+    const correctParam = params.get('correct');
+    const roundsParam = params.get('rounds');
+
+    let percent = 0;
+
+    if (scoreParam !== null && scoreParam !== '') {
+        const n = Number(scoreParam);
+        if (!Number.isNaN(n)) percent = n;
+    } else if (correctParam !== null && roundsParam !== null) {
+        const correct = Number(correctParam);
+        const rounds = Number(roundsParam);
+
+        if (!Number.isNaN(correct) && !Number.isNaN(rounds) && rounds > 0) {
+            percent = (correct / rounds) * 100;
+        }
+    }
+
+    // orezanie + zaokrúhlenie
+    percent = Math.max(0, Math.min(100, Math.round(percent)));
+
+    const circle = document.getElementById('resultCircle');
+    const value = document.getElementById('resultValue');
+
+    value.textContent = percent + '%';
+
+    // progress ring: percent -> uhol (0-360)
+    const angle = Math.round((percent / 100) * 360);
+
+    // prvá farba = vyplnená časť, druhá = zvyšok
+    circle.style.background = `conic-gradient(#f4b5d7 0deg ${angle}deg, #b9d6d3 ${angle}deg 360deg)`;
+</script>
+
+</body>
+</html>

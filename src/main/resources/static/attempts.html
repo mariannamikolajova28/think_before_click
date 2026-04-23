@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail pokusu</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="game-wrapper">
+
+
+    <div class="game-layout">
+
+
+
+        <!-- LEFT -->
+        <aside class="sidebar-left feedback-left">
+            <button class="back-button feedback-back" type="button" onclick="window.location.href='feedback.html'">
+                <img src="img/logos/back.png" alt="Späť">
+            </button>
+
+            <div class="sidebar-logo feedback-mini-logo">
+                <img src="img/logos/logo_blue.png" alt="Logo" class="sidebar-logo-img">
+                <p class="sidebar-logo-text">
+                    trénuj svoju pozornosť<br>
+                    ochráň svoje údaje
+                </p>
+            </div>
+        </aside>
+
+        <!-- MIDDLE -->
+        <main class="qa-page">
+            <h1 class="feedback-title">Detail pokusu</h1>
+            <p id="summaryLine" class="qa-summary"></p>
+
+            <div id="qaGrid" class="qa-grid">
+                <!-- sem JS pridá otázky -->
+            </div>
+        </main>
+
+        <!-- RIGHT -->
+        <aside class="sidebar-right-login"></aside>
+
+    </div>
+</div>
+
+<script>
+
+
+    function getLoggedUser() {
+        return (localStorage.getItem("playerName") || "").trim();
+    }
+
+    function requireLogin() {
+        const u = getLoggedUser();
+        if (!u) {
+            window.location.href = "login.html";
+            return null;
+        }
+        return u;
+    }
+
+    function getParam(name) {
+        const url = new URL(window.location.href);
+        return url.searchParams.get(name);
+    }
+
+    function labelAnswer(a) {
+        // v DB ukladáš "P" alebo "R"
+        if (a === "P") return "Podvod";
+        if (a === "R") return "Bezpečné";
+        return a || "-";
+    }
+
+    function escapeHtml(s) {
+        return String(s ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function detectAttackType(imagePath) {
+        if (imagePath.includes("/P")) return "phishing";
+        if (imagePath.includes("/B") || imagePath.includes("/SN")) return "baiting";
+        if (imagePath.includes("/S")) return "smishing";
+        if (imagePath.includes("/T")) return "tailgating";
+
+        if (imagePath.includes("/RB")) return "baiting";
+        if (imagePath.includes("/R")) return "phishing";
+
+        return "phishing";
+    }
+
+    function getActualIsPhishing(userAnswer, correct) {
+        return (userAnswer === "P" && correct) || (userAnswer === "R" && !correct);
+    }
+
+    function getFeedbackFileName(imagePath, actualIsPhishing) {
+        const type = detectAttackType(imagePath);
+
+        if (actualIsPhishing) {
+            if (type === "phishing") return "phishing.txt";
+            if (type === "baiting") return "baiting.txt";
+            if (type === "smishing") return "smishing.txt";
+            if (type === "tailgating") return "tailgating.txt";
+        } else {
+            if (type === "phishing") return "preal.txt";
+            if (type === "baiting") return "breal.txt";
+            if (type === "smishing") return "sreal.txt";
+            if (type === "tailgating") return "treal.txt";
+        }
+
+        return "phishing.txt";
+    }
+
+    async function loadDetail() {
+        const username = requireLogin();
+        if (!username) return;
+
+        const sessionId = getParam("session");
+        if (!sessionId) {
+            document.getElementById("summaryLine").textContent = "Chýba parameter session.";
+            return;
+        }
+
+        const res = await fetch(
+            `/api/attempt-details/${encodeURIComponent(username)}/${encodeURIComponent(sessionId)}`,
+            { cache: "no-store" }
+        );
+
+        if (!res.ok) {
+            document.getElementById("summaryLine").textContent = "Chyba načítania: " + res.status;
+            return;
+        }
+
+        const items = await res.json();
+        const grid = document.getElementById("qaGrid");
+        grid.innerHTML = "";
+
+        const total = items.length;
+        const correct = items.filter(x => x.correct).length;
+        const percent = total ? Math.round((correct / total) * 100) : 0;
+
+        document.getElementById("summaryLine").textContent =
+            `Úspešnosť: ${percent}% (Správne ${correct}/${total})`;
+
+        const cards = await Promise.all(items.map(async (x, idx) => {
+
+            const badgeText = x.correct ? "SPRÁVNE" : "NESPRÁVNE";
+            const badgeClass = x.correct ? "qa-badge ok" : "qa-badge bad";
+            const ans = labelAnswer(x.userAnswer);
+
+            const actualIsPhishing = getActualIsPhishing(x.userAnswer, x.correct);
+            const fileName = getFeedbackFileName(x.imagePath, actualIsPhishing);
+
+            let feedbackText = "Spätná väzba sa nepodarila načítať.";
+
+            try {
+                const response = await fetch(`feedback/${fileName}`, { cache: "no-store" });
+                if (response.ok) {
+                    feedbackText = await response.text();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+
+            return `
+        <article class="qa-card">
+          <img class="qa-image" src="${escapeHtml(x.imagePath)}" alt="Otázka ${idx + 1}" loading="lazy">
+
+          <div class="qa-meta">
+            <div class="qa-meta-left">
+              <div class="qa-answer">Odpoveď: ${escapeHtml(ans)}</div>
+              <div class="qa-sub">Otázka #${idx + 1}</div>
+            </div>
+
+            <div class="${badgeClass}">${badgeText}</div>
+          </div>
+
+          <div class="qa-feedback ${x.correct ? "feedback-correct" : "feedback-wrong"}">
+               ${escapeHtml(feedbackText)}
+            </div>
+
+        </article>
+    `;
+        }));
+
+        grid.innerHTML = cards.join("");
+    }
+
+    document.addEventListener("DOMContentLoaded", loadDetail);
+</script>
+
+</body>
+</html>

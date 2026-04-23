@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Môj profil</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="game-wrapper">
+
+
+    <div class="game-layout">
+
+        <!-- LEFT -->
+        <aside class="sidebar-left profile-left">
+            <button class="back-button profile-back" type="button"
+                    onclick="window.location.href='index.html'">
+                <img src="img/logos/back.png" alt="Späť">
+            </button>
+
+            <div class="sidebar-logo profile-mini-logo">
+                <img src="img/logos/logo_blue.png" alt="Logo" class="sidebar-logo-img">
+                <p class="sidebar-logo-text">
+                    trénuj svoju pozornosť<br>
+                    ochráň svoje údaje
+                </p>
+            </div>
+        </aside>
+
+        <!-- MIDDLE -->
+        <main class="profile-main">
+            <h1 class="profile-title">Nastavenia profilu</h1>
+            <div class="profile-subtitle">Prihlasovacie údaje</div>
+
+            <form class="profile-form" onsubmit="return false;">
+                <div class="profile-row">
+                    <label for="profile-name" class="profile-label">Meno:</label>
+                    <!-- ✅ už nie readonly -->
+                    <input id="profile-name" class="profile-input" type="text" value="">
+                </div>
+
+                <!-- ✅ nové tlačidlo na uloženie mena -->
+                <div class="profile-actions">
+                    <button type="button" class="btn-pink-small profile-btn" id="saveNameBtn">
+                        Uložiť zmenu
+                    </button>
+
+                    <button type="button" class="btn-pink-small profile-btn" id="openSurveyBtn">
+                        Dotazník
+                    </button>
+
+                    <button type="button" class="btn-pink-small profile-btn profile-delete" id="openDeleteModal">
+                        Vymazať profil
+                    </button>
+                </div>
+            </form>
+        </main>
+
+        <!-- RIGHT SIDE -->
+        <aside class="sidebar-right-login">
+            <div class="info-heading">Chceš sa dozvedieť viac?</div>
+
+            <article class="info-card">
+                <div class="info-card-logo">NBU2024Report</div>
+                <div class="info-card-title">Národný bezpečnostný úrad</div>
+                <div>Správa o kybernetickej bezpečnosti v Slovenskej republike v roku 2024</div>
+                <a class="info-card-link"
+                   href="https://www.nbu.gov.sk/data/att/3305.pdf"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">TatraBanka</div>
+                <div class="info-card-title">Digitálna Bezpečnosť</div>
+                <div>#predigitalnubezpecnost – edukatívna stránka o digitálnej bezpečnosti a ochrane pred online podvodmi</div>
+                <a class="info-card-link"
+                   href="https://www.tatrabanka.sk/predigitalnubezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">ESET</div>
+                <div class="info-card-title">Progress. Protected.</div>
+                <div>Sociálne inžinierstvo a kybernetická bezpečnosť – vysvetlenie manipulácie používateľov a najčastejších online podvodov</div>
+                <a class="info-card-link"
+                   href="https://www.eset.com/sk/socialne-inzinierstvo-a-kyberneticka-bezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+        </aside>
+
+    </div>
+</div>
+
+<!-- MODAL: DELETE ACCOUNT -->
+<div class="modal-overlay" id="deleteModal" aria-hidden="true" style="display:none;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+        <h2 class="modal-title" id="deleteModalTitle">Potvrdiť vymazanie profilu?</h2>
+
+        <div class="modal-actions">
+            <button type="button" class="auth-btn auth-btn-light modal-btn" id="closeDeleteModal">
+                Zavrieť
+            </button>
+
+            <button type="button" class="auth-btn auth-btn-dark modal-btn" id="confirmDeleteModal">
+                Vymazať
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- helpers
+    function getLoggedUser() {
+        return (localStorage.getItem("playerName") || "").trim();
+    }
+
+    function requireLogin() {
+        const u = getLoggedUser();
+        if (!u) {
+            window.location.href = "login.html";
+            return null;
+        }
+        return u;
+    }
+
+    function normalizeName(x) {
+        return (x || "").trim();
+    }
+
+    // --- init
+    (function initProfile() {
+        const username = requireLogin();
+        if (!username) return;
+
+        const nameInput = document.getElementById("profile-name");
+        nameInput.value = username;
+
+        // dotazník (edit režim)
+        document.getElementById("openSurveyBtn").addEventListener("click", () => {
+            window.location.href = "survey.html?mode=edit";
+        });
+
+        // uložiť zmenu mena
+        document.getElementById("saveNameBtn").addEventListener("click", saveUsername);
+
+        // Enter v inpute = uložiť
+        nameInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") saveUsername();
+        });
+    })();
+
+    async function saveUsername() {
+        const oldUsername = requireLogin();
+        if (!oldUsername) return;
+
+        const input = document.getElementById("profile-name");
+        const newUsername = normalizeName(input.value);
+
+        if (!newUsername) {
+            alert("Meno nesmie byť prázdne.");
+            input.focus();
+            return;
+        }
+
+        if (newUsername === oldUsername) {
+            alert("Meno je rovnaké, nič sa nezmenilo.");
+            return;
+        }
+
+        // volanie backendu
+        const res = await fetch(`/api/users/${encodeURIComponent(oldUsername)}`, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ newUsername })
+        });
+
+        if (res.ok) {
+            localStorage.setItem("playerName", newUsername);
+            // pre istotu – aby sa niekde neťahal starý pending
+            localStorage.removeItem("pendingUsername");
+
+            alert("Meno bolo úspešne zmenené.");
+            return;
+        }
+
+        if (res.status === 409) {
+            alert("Toto meno už existuje. Vyber si iné.");
+            input.focus();
+            return;
+        }
+
+        if (res.status === 400) {
+            alert("Neplatné meno (prázdne alebo nesprávne).");
+            input.focus();
+            return;
+        }
+
+        if (res.status === 404) {
+            alert("Používateľ sa nenašiel. Prihlás sa znova.");
+            localStorage.removeItem("playerName");
+            window.location.href = "login.html";
+            return;
+        }
+
+        alert("Uloženie zlyhalo (chyba " + res.status + ").");
+    }
+
+    // --- modal wiring
+    const deleteModal = document.getElementById("deleteModal");
+    const openDeleteBtn = document.getElementById("openDeleteModal");
+    const closeDeleteBtn = document.getElementById("closeDeleteModal");
+    const confirmDeleteBtn = document.getElementById("confirmDeleteModal");
+
+    function openDeleteModal() {
+        deleteModal.style.display = "flex";
+        deleteModal.setAttribute("aria-hidden", "false");
+    }
+    function closeDeleteModal() {
+        deleteModal.style.display = "none";
+        deleteModal.setAttribute("aria-hidden", "true");
+    }
+
+    openDeleteBtn.addEventListener("click", openDeleteModal);
+    closeDeleteBtn.addEventListener("click", closeDeleteModal);
+    deleteModal.addEventListener("click", (e) => { if (e.target === deleteModal) closeDeleteModal(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && deleteModal.style.display === "flex") closeDeleteModal(); });
+
+    // --- delete profile action
+    confirmDeleteBtn.addEventListener("click", async () => {
+        const username = requireLogin();
+        if (!username) return;
+
+        const res = await fetch(`/api/users/${encodeURIComponent(username)}`, { method: "DELETE" });
+
+        if (res.ok) {
+            localStorage.removeItem("playerName");
+            localStorage.removeItem("pendingUsername");
+            closeDeleteModal();
+            alert("Profil bol vymazaný.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        alert("Vymazanie profilu zlyhalo (chyba " + res.status + ").");
+    });
+</script>
+
+</body>
+</html>

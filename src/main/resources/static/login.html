@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Prihlásenie – Think Before Click</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/styles.css"/>
+</head>
+
+<body>
+
+<div class="game-wrapper">
+
+
+    <div class="game-layout">
+
+        <!-- LEFT SIDE -->
+        <aside class="sidebar-left">
+            <div class="sidebar-left-text">
+                Myslíš si, že rozoznáš podvodný e-mail alebo falošnú správu?
+                <p class="sidebar-subtext">
+                    Otestuj svoje reflexy a nauč sa, ako sa nenechať nachytať.
+                </p>
+            </div>
+
+            <div class="sidebar-logo">
+                <img src="img/logos/logo_blue.png" alt="Think Before Click" class="sidebar-logo-img">
+                <p class="sidebar-logo-text">
+                    TRÉNUJ SVOJU POZORNOSŤ<br>
+                    OCHRÁŇ SVOJE ÚDAJE
+                </p>
+            </div>
+        </aside>
+
+        <!-- MIDDLE LOGIN -->
+        <main class="auth-main">
+            <div class="auth-logo">
+                <img src="img/logos/logo_black.png" alt="Think Before Click">
+            </div>
+
+            <div class="auth-title">PRIHLÁSENIE</div>
+
+            <form class="auth-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="username">Meno:</label>
+                    <div class="form-input-wrapper">
+                        <input class="form-input" type="text" id="username" name="username" autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="auth-buttons-row">
+                    <button type="button" onclick="goRegister()" class="auth-btn auth-btn-light">Registrovať sa</button>
+                    <button type="button" onclick="doLogin()" class="auth-btn auth-btn-dark">Prihlásiť sa</button>
+                </div>
+            </form>
+        </main>
+
+        <!-- RIGHT SIDE -->
+        <aside class="sidebar-right-login">
+            <div class="info-heading">Chceš sa dozvedieť viac?</div>
+
+            <article class="info-card">
+                <div class="info-card-logo">NBU2024Report</div>
+                <div class="info-card-title">Národný bezpečnostný úrad</div>
+                <div>Správa o kybernetickej bezpečnosti v Slovenskej republike v roku 2024</div>
+                <a class="info-card-link"
+                   href="https://www.nbu.gov.sk/data/att/3305.pdf"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">TatraBanka</div>
+                <div class="info-card-title">Digitálna Bezpečnosť</div>
+                <div>#predigitalnubezpecnost – edukatívna stránka o digitálnej bezpečnosti a ochrane pred online podvodmi</div>
+                <a class="info-card-link"
+                   href="https://www.tatrabanka.sk/predigitalnubezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+
+            <article class="info-card">
+                <div class="info-card-logo">ESET</div>
+                <div class="info-card-title">Progress. Protected.</div>
+                <div>Sociálne inžinierstvo a kybernetická bezpečnosť – vysvetlenie manipulácie používateľov a najčastejších online podvodov</div>
+                <a class="info-card-link"
+                   href="https://www.eset.com/sk/socialne-inzinierstvo-a-kyberneticka-bezpecnost/"
+                   target="_blank">
+                    Chcem vedieť viac
+                </a>
+            </article>
+        </aside>
+
+    </div>
+</div>
+
+<script>
+    function getUsernameInput() {
+        return document.getElementById("username").value.trim();
+    }
+
+    async function goRegister() {
+
+        const usernameInput = document.getElementById("username");
+        const username = usernameInput.value.trim();
+
+        if (!username) {
+            alert("Prosím zadaj meno pred registráciou.");
+            usernameInput.focus();
+            return;
+        }
+
+        const res = await fetch("/api/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ username })
+        });
+
+        if (res.ok) {
+            alert("Používateľ už existuje. Prihlás sa.");
+            return;
+        }
+
+        localStorage.setItem("pendingUsername", username);
+        window.location.href = "survey.html";
+    }
+
+    async function doLogin() {
+        const username = getUsernameInput();
+
+        if (!username) {
+            alert("Zadaj meno.");
+            return;
+        }
+
+        const res = await fetch("/api/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ username })
+        });
+
+        if (res.ok) {
+            localStorage.setItem("playerName", username);
+            localStorage.removeItem("pendingUsername");
+            window.location.href = "index.html";
+            return;
+        }
+
+        if (res.status === 404) {
+            localStorage.setItem("pendingUsername", username);
+            alert("Používateľ neexistuje. Prosím zaregistruj sa vyplnením dotazníka.");
+            window.location.href = "survey.html";
+            return;
+        }
+
+        alert("Prihlásenie zlyhalo (chyba " + res.status + ").");
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>Herná slučka</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="game-wrapper">
+
+
+
+    <div class="game-layout">
+
+        <!-- LEFT SIDE -->
+        <aside class="sidebar-left">
+            <div class="sidebar-left-text">
+                <strong>TIPY:</strong>
+                <ul id="tipsList"></ul>
+            </div>
+
+            <div class="sidebar-logo">
+                <img src="img/logos/logo_blue.png" class="sidebar-logo-img" alt="Logo">
+                <p class="sidebar-logo-text">
+                    trénuj svoju pozornosť<br>
+                    ochráň svoje údaje
+                </p>
+            </div>
+        </aside>
+
+        <!-- MIDDLE  -->
+        <main class="game-main">
+
+            <h1 class="game-main-title">Hrozby sociálneho inžinierstva</h1>
+
+            <!-- info o priebehu hry -->
+            <p id="roundInfo" style="font-weight:700; margin-top:-0.5rem; margin-bottom:0.8rem;">
+                Kolo 1 / 10
+            </p>
+
+            <!-- EMAIL IMAGE -->
+            <div class="email-wrapper">
+                <img id="emailImage" src="" alt="Email" class="email-image">
+                <button class="zoom-btn" id="openZoom">+</button>
+            </div>
+
+            <!-- BUTTONS -->
+            <p id="decisionQuestion"
+               style="display:none; font-weight:700; margin: 0 0 0.6rem 0;">
+                Rozhodol si sa správne?
+            </p>
+
+            <div class="game-buttons">
+                <button id="btnSafe" class="btn-dark-small" onclick="submitAnswer(false)">
+                    Je to bezpečné
+                </button>
+
+                <button id="btnPhish" class="btn-dark-small" onclick="submitAnswer(true)">
+                    Je to podvod
+                </button>
+            </div>
+
+            <button class="btn-dark-small btn-exit"
+                    onclick="window.location.href='index.html'">
+                Ukončiť hru
+            </button>
+
+        </main>
+
+        <!-- RIGHT SIDE -->
+        <aside class="sidebar-right">
+            <div class="stats-card">
+                <strong>Štatistika odpovedí</strong>
+                <span style="display:block; opacity:.85; margin-top:4px;">Správne vs. nesprávne</span>
+
+                <div class="bar-chart">
+                    <div class="bar-col">
+                        <div class="bar bar-correct" id="barCorrect" style="height:0%"></div>
+                        <div class="bar-label">Správne</div>
+                        <div class="bar-value" id="valCorrect">0</div>
+                    </div>
+
+                    <div class="bar-col">
+                        <div class="bar bar-wrong" id="barWrong" style="height:0%"></div>
+                        <div class="bar-label">Nesprávne</div>
+                        <div class="bar-value" id="valWrong">0</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+</div>
+
+<!-- ===== MODAL LUPA ===== -->
+<div class="modal-overlay" id="zoomModal">
+    <div class="zoom-modal">
+        <button class="zoom-close" id="closeZoom">✕</button>
+        <img id="zoomImage" src="" alt="Email detail">
+    </div>
+</div>
+
+<!-- RÝCHLA SPÄTNÁ VÄZBA -->
+<div class="modal-overlay" id="feedbackModal" style="display:none;">
+    <div class="modal">
+
+        <h2 class="modal-title">Tvoja odpoveď bola</h2>
+
+        <div id="feedbackResult" class="feedback-result">
+            SPRÁVNA
+        </div>
+
+        <p id="fbTitleText"></p>
+        <p id="fbReasonText"></p>
+        <p id="fbAdviceText"></p>
+
+        <button class="btn-dark-small" onclick="closeFeedback()">
+            Pokračovať
+        </button>
+
+    </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="modal-overlay" id="loadingOverlay" style="display:none;">
+    <div class="loading-box" aria-label="Načítavam">
+        <div class="spinner"></div>
+    </div>
+</div>
+
+<!-- 1) Načítame banku otázok -->
+<script src="questions.js"></script>
+
+<script>
+
+    const TIPS = {
+        phishing: [
+            "Skontroluj adresu odosielateľa",
+            "Pozor na podozrivé odkazy",
+            "Podvodníci vytvárajú tlak na rýchlu reakciu"
+        ],
+
+        baiting: [
+            "Pozor na ponuky zadarmo",
+            "Podvodníci lákajú na výhody alebo odmeny",
+            "Over identitu neznámych ľudí"
+        ],
+
+        smishing: [
+            "Neotváraj odkazy v podozrivých SMS",
+            "Over si číslo odosielateľa",
+            "Banka nikdy nepýta údaje cez SMS"
+        ],
+
+
+        tailgating: [
+            "Over si identitu",
+            "Nezdieľaj citlivé údaje",
+            "Ak si nie si istý, zavolaj overenej osobe"
+        ]
+    };
+
+    function detectAttackType(imagePath) {
+
+        if (imagePath.includes("/P")) return "phishing";
+        if (imagePath.includes("/B") || imagePath.includes("/SN")) return "baiting";
+        if (imagePath.includes("/S")) return "smishing";
+        if (imagePath.includes("/T")) return "tailgating";
+
+        if (imagePath.includes("/RB")) return "baiting";
+        if (imagePath.includes("/R")) return "phishing";
+
+        return "phishing";
+    }
+
+    async function loadFeedbackText(imagePath, isPhishing) {
+
+        const type = detectAttackType(imagePath);
+
+        // názov súboru
+        let fileName = "";
+
+        if (isPhishing) {
+
+            if (type === "phishing") fileName = "phishing.txt";
+            if (type === "baiting") fileName = "baiting.txt";
+            if (type === "smishing") fileName = "smishing.txt";
+            if (type === "tailgating") fileName = "tailgating.txt";
+
+        } else {
+
+            if (type === "phishing") fileName = "preal.txt";
+            if (type === "baiting") fileName = "breal.txt";
+            if (type === "smishing") fileName = "sreal.txt";
+            if (type === "tailgating") fileName = "treal.txt";
+
+        }
+
+        try {
+
+            const response = await fetch("feedback/" + fileName);
+            const text = await response.text();
+
+            document.getElementById("fbTitleText").textContent = text;
+
+        } catch (e) {
+
+            document.getElementById("fbTitleText").textContent =
+                "Nepodarilo sa načítať spätnú väzbu.";
+
+            console.error(e);
+        }
+    }
+
+    function updateTips(imagePath) {
+
+        const type = detectAttackType(imagePath);
+        const tips = TIPS[type] || [];
+
+        const tipsList = document.getElementById("tipsList");
+
+        tipsList.innerHTML = tips
+            .map(t => `<li>${t}</li>`)
+            .join("");
+    }
+    // ===== LUPA modal =====
+    const zoomModal = document.getElementById('zoomModal');
+    document.getElementById('openZoom').onclick = () => {
+        zoomModal.style.display = 'flex';
+    };
+    document.getElementById('closeZoom').onclick = () => {
+        zoomModal.style.display = 'none';
+    };
+
+    // ===== Nastavenie =====
+    const ROUNDS = 10;
+
+    // ===== Stav hry =====
+    let selected = [];
+    let roundIndex = 0;
+    let correctCount = 0;
+
+    // ✅ session id pre jednu hru (všetkých 10 otázok)
+    let gameSessionId = null;
+    function newGameSessionId() {
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        return Date.now().toString();
+    }
+
+    // DOM
+    const emailImage = document.getElementById("emailImage");
+    const zoomImage = document.getElementById("zoomImage");
+    const roundInfo = document.getElementById("roundInfo");
+
+    const decisionQuestion = document.getElementById("decisionQuestion");
+    const btnSafe = document.getElementById("btnSafe");
+    const btnPhish = document.getElementById("btnPhish");
+
+    const fbTitleText  = document.getElementById("fbTitleText");
+    const fbReasonText = document.getElementById("fbReasonText");
+    const fbAdviceText = document.getElementById("fbAdviceText");
+
+    const barCorrect = document.getElementById("barCorrect");
+    const barWrong   = document.getElementById("barWrong");
+    const valCorrect = document.getElementById("valCorrect");
+    const valWrong   = document.getElementById("valWrong");
+
+    // ===== Hráč + pokusy (koľkokrát spustil hru) =====
+    const playerName = (localStorage.getItem("playerName") || "Hráč").trim();
+    const attemptsKey = `attempts_${playerName}`;
+    let gameAttempts = Number(localStorage.getItem(attemptsKey) || 0);
+    gameAttempts++;
+    localStorage.setItem(attemptsKey, String(gameAttempts));
+
+    // ✅ uloženie odpovede do DB
+    async function saveAttempt(imagePath, userAnswer, correct) {
+        const username = (localStorage.getItem("playerName") || "").trim();
+        if (!username) return; // ak nie je prihlásený, neukladáme
+
+        try {
+            await fetch("/api/attempt", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    username,
+                    imagePath,
+                    userAnswer,      // "P" alebo "R"
+                    correct,         // true/false
+                    gameSessionId
+                })
+            });
+        } catch (e) {
+            console.error("Nepodarilo sa uložiť attempt:", e);
+        }
+    }
+
+    // ===== Fallback: keď sa obrázok nenačíta, preskoč ho =====
+    emailImage.onerror = () => {
+        console.warn("Obrázok sa nenačítal, preskakujem:", emailImage.src);
+        roundIndex++;
+        if (roundIndex < selected.length) {
+            loadRound();
+        } else {
+            finishGame();
+        }
+    };
+
+    // ===== Náhodný výber bez opakovania =====
+    function pickRandomQuestions(all, count) {
+        const copy = [...all];
+        for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy.slice(0, count);
+    }
+
+    function updateRoundInfo() {
+        roundInfo.textContent = `Kolo ${roundIndex + 1} / ${selected.length}`;
+    }
+
+    function updateStatsChart() {
+        const answered = roundIndex;
+        const wrongCount = answered - correctCount;
+
+        valCorrect.textContent = String(correctCount);
+        valWrong.textContent   = String(Math.max(0, wrongCount));
+
+        if (answered <= 0) {
+            barCorrect.style.height = "0%";
+            barWrong.style.height = "0%";
+            return;
+        }
+
+        const correctPct = Math.round((correctCount / answered) * 100);
+        const wrongPct   = 100 - correctPct;
+
+        barCorrect.style.height = Math.max(6, correctPct) + "%";
+        barWrong.style.height   = Math.max(6, wrongPct) + "%";
+    }
+
+    function loadRound() {
+        const q = selected[roundIndex];
+        emailImage.src = q.image;
+        zoomImage.src = q.image;
+
+        updateTips(q.image);
+        updateRoundInfo();
+
+        const isRBorSNorB = /\/RB\d*\.png$/i.test(q.image) || /\/SN\d*\.png$/i.test(q.image) || /\/B\d*\.png$/i.test(q.image);
+
+        if (isRBorSNorB) {
+            decisionQuestion.style.display = "block";
+            btnSafe.textContent = "Áno";  // submitAnswer(false)
+            btnPhish.textContent = "NIE"; // submitAnswer(true)
+        } else {
+            decisionQuestion.style.display = "none";
+            btnSafe.textContent = "Je to bezpečné";
+            btnPhish.textContent = "Je to podvod";
+        }
+    }
+
+    // ===== Keď hráč odpovie =====
+    async function submitAnswer(userSaysPhishing) {
+        const q = selected[roundIndex];
+        const isCorrect = (userSaysPhishing === q.correctIsPhishing);
+
+        // ✅ uloženie do DB (obrázok + odpoveď + správnosť)
+        // userAnswer: P = podvod, R = reálna/bezpečná
+        const userAnswer = userSaysPhishing ? "P" : "R";
+        await saveAttempt(q.image, userAnswer, isCorrect);
+
+        if (isCorrect) correctCount++;
+        updateStatsChart();
+
+        // Texty v modale
+        // načítanie spätnej väzby z txt
+        await loadFeedbackText(q.image, q.correctIsPhishing);
+
+        const modal = document.getElementById('feedbackModal');
+        const result = document.getElementById('feedbackResult');
+
+        if (isCorrect) {
+            result.textContent = 'SPRÁVNA';
+            result.style.color = '#5ccfc1';
+        } else {
+            result.textContent = 'NESPRÁVNA';
+            result.style.color = '#f4b5d7';
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    async function finishGame() {
+        const roundsPlayed = selected.length;
+        const successPercent = Math.round((correctCount / roundsPlayed) * 100);
+
+        try {
+            await fetch("/api/result", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    name: playerName,
+                    username: playerName,
+                    successPercent: successPercent,
+                    attempts: gameAttempts
+                })
+            });
+        } catch (e) {
+            console.error("Nepodarilo sa uložiť skóre:", e);
+        }
+
+        window.location.href = `end.html?score=${successPercent}&correct=${correctCount}&rounds=${roundsPlayed}&attempts=${gameAttempts}`;
+    }
+
+    // ===== Po kliknutí "Pokračovať" =====
+    async function closeFeedback() {
+        document.getElementById('feedbackModal').style.display = 'none';
+
+        const loading = document.getElementById('loadingOverlay');
+        loading.style.display = 'flex';
+
+        setTimeout(async () => {
+            loading.style.display = 'none';
+
+            roundIndex++;
+            updateStatsChart();
+
+            if (roundIndex < selected.length) {
+                loadRound();
+                return;
+            }
+
+            await finishGame();
+
+        }, 900);
+    }
+
+    // ===== ŠTART hry =====
+    (function startGame() {
+        if (!window.QUESTIONS || window.QUESTIONS.length < ROUNDS) {
+            alert("Nemáš dosť otázok. Pridaj aspoň " + ROUNDS + " obrázkov do Phising/ a Real/.");
+            return;
+        }
+
+        // ✅ nové session id pre túto hru
+        gameSessionId = newGameSessionId();
+
+        selected = pickRandomQuestions(window.QUESTIONS, ROUNDS);
+        roundIndex = 0;
+        correctCount = 0;
+        updateStatsChart();
+        loadRound();
+    })();
+</script>
+
+</body>
+</html>
